@@ -1,18 +1,21 @@
 ---
 name: write-linear-issues
-description: Use when drafting a Linear engineering issue (feature, refactor, schema change, migration, infra task) at "In Preparation" — anything where Context, Scope, Out of scope, and Acceptance Criteria need to express intent without freezing implementation. Also trigger when rewriting an issue whose sections have blurred into code-level detail.
+description: Use when drafting a Linear engineering issue (feature, refactor, schema change, migration, infra task). Default output is Context + Scope only — Out of scope and Acceptance Criteria are written only when the user explicitly asks. Also trigger when rewriting an issue whose Context or Scope has blurred into code-level detail.
 ---
 
-# Linear Issue — Context / Scope / Out of scope / Acceptance Criteria
+# Linear Issue — Context and Scope
 
 ## Overview
 
-An issue at **In Preparation** is an *intent contract*, not a merge contract. It tells reviewers *why*, implementers *what is in scope*, PM/triage *what is not*, and reviewers *when it's done*. Implementation details (SQL, proto signatures, code) belong in the PR — they freeze the issue prematurely if they show up here.
+An engineering issue is an *intent contract*, not a merge contract. It tells reviewers *why* and implementers *what is in scope*. Implementation details (SQL, proto signatures, code) belong in the PR — they freeze the issue prematurely if they show up here.
+
+**Default output is Context + Scope only.** Out of scope and Acceptance Criteria add noise to most issues and are written only when the user explicitly asks for them.
 
 ## When to use
 
 - Drafting a new engineering issue: feature, refactor, schema change, migration, or infra task.
-- Rewriting an issue whose sections have blurred (motivation in Scope, implementation in Scope, AC restating Scope).
+- Rewriting an issue whose Context or Scope has blurred (motivation in Scope, implementation in Scope).
+- Adding Out of scope or Acceptance Criteria only when the user explicitly asks for them.
 
 ### When NOT to use
 
@@ -23,12 +26,19 @@ An issue at **In Preparation** is an *intent contract*, not a merge contract. It
 | Spike or research | Research template — question / approach / timebox / deliverable. |
 | Product / feature scoping (pre-engineering) | A scoping doc, not an issue. |
 
-## The four sections
+## Sections
+
+**Default output:**
 
 | Section | Reader | Question |
 | --- | --- | --- |
 | Context | reviewer / future maintainer | Why does this exist? Who is blocked? Why now? |
 | Scope | implementer / reviewer | What is in this issue? (At the contract level — name fields, endpoints, pages.) |
+
+**On request only:**
+
+| Section | Reader | Question |
+| --- | --- | --- |
 | Out of scope | PM / triage | What is NOT in this issue, and where does it live instead? |
 | Acceptance Criteria | reviewer / implementer | How do we know it's done? |
 
@@ -63,36 +73,13 @@ Scope names *what is in this issue* using business language. It does NOT specify
 1. **Drop this line — could the implementer still get it right?** No → keep. Yes → drop.
 2. **Keep this line — would it lock implementation choices a year from now?** Yes → rewrite in business language.
 
-### Out of scope — three tiers
+### Out of scope — only when the user asks
 
-Each item lands in exactly one tier. Naked "later" / "TBD" is rejected — push it back to `[CONFIRM]` and ask the user.
+Each item names the thing not being done. Add a destination when one exists — a ticket reference, "not planned (reason)", or "deferred (trigger)". Bullet list, no forced format. If the user did not ask for this section, omit it entirely.
 
-| Tier | Format | When |
-| --- | --- | --- |
-| Tracked | `<Item> — tracked in <ENG-1234 / Project X / milestone Y>.` | Already filed somewhere |
-| Not planned | `<Item> — not planned (<reason>).` | Explicit decision not to do |
-| Deferred | `<Item> — deferred (<trigger>).` | Will be reconsidered when `<trigger>` happens |
+### Acceptance Criteria — only when the user asks
 
-### Acceptance Criteria — outcome statements, not test scenarios
-
-AC describes the **finished state**. Reviewers and implementers read it to know when to stop, not to learn how to test.
-
-Rules:
-
-- **3 items max.** More than 3 means Scope is unclear — fix Scope, not AC.
-- **At least one invariant** — something that should NOT change. This is where regressions hide.
-- **Outcome verbs only**: `is / are / returns / excludes / requires / contains`. **Banned**: `Run`, `Call`, `Verify`, `Check`, `Ensure`, `Add`, `Implement`, `Create`.
-- **No checkboxes.** Bullet points only. Checkboxes invite QA-style enumeration.
-- **No `[CONFIRM]`.** AC is the contract; unresolved questions belong in Scope first.
-- **No mechanical mirror of Scope.** AC and Scope can share topics — they must — but AC is phrased as **observable state** while Scope is phrased as **instructions**. If an AC item is just a Scope instruction reworded as a sentence (e.g. Scope "Add `is_archived` column" → AC "`is_archived` column is added"), delete it.
-
-| ✗ Bad | ✓ Good | Why |
-| --- | --- | --- |
-| `Run SELECT is_archived FROM accounts → no error.` | `is_archived field is queryable on accounts.` | Outcome, not test mechanic |
-| `Add is_archived column to accounts.` | (delete — restates Scope) | AC ≠ Scope mirror |
-| `Code is reviewed and tests pass.` | (delete — always true at merge) | Verifies nothing |
-| `Performance is acceptable.` | `P95 of ListAccounts unchanged vs baseline.` | Threshold makes it observable |
-| `[ ] Tenant with 1 archived + 1 active → returns 1.` | `Archived accounts are excluded by default.` | Outcome doesn't need fixture |
+Describe the finished state, not the test plan. Prefer outcome verbs (`is / are / returns / excludes / requires / contains`) over imperative verbs (`Run`, `Verify`, `Add`). Don't restate Scope as outcomes — if an AC item is Scope reworded, drop it. If the user did not ask for this section, omit it entirely.
 
 ## Process
 
@@ -117,15 +104,19 @@ Rules:
      - **Context** when describing the current-state fact ("No prior soft-archive pattern exists in this service.").
      - **Scope** when phrased as introducing the new convention ("Introduces a new `archived_at` convention; no prior soft-archive pattern in this service.").
 
-3. **Draft into the template.** Use only the Scope sub-headings that apply; drop the rest. Mark every unknown inline as `[CONFIRM: <question>]` — never silently guess.
+3. **Draft Context and Scope into the template.** Use only the Scope sub-headings that apply; drop the rest. Mark every unknown inline as `[CONFIRM: <question>]` — never silently guess. Do NOT write Out of scope or Acceptance Criteria at this step.
 
 4. **Resolve `[CONFIRM]` items, one focused question at a time.** Do NOT probe Out of scope unprompted; soliciting scope questions invites scope creep.
 
-5. **Deliver.** Render the markdown. If the user asks to create the issue, call Linear MCP `save_issue` with `state=In Preparation`.
+5. **Add Out of scope / Acceptance Criteria only when the user explicitly asks.** Direct instructions like "include Out of scope", "list dependencies", "add AC", "what's the acceptance criteria" trigger the optional section. Do not infer intent from "make it comprehensive" or "cover everything." When in doubt, omit and let the user request it.
+
+6. **Deliver.** Render the markdown. If the user asks to create the issue, call Linear MCP `save_issue` with `state=Todo` and `labels=["AI"]`. The `AI` label must already exist in the workspace — if `save_issue` fails because the label is missing, ask the user to create it in Linear once.
 
 **Story-point estimation is opt-in.** Run it only when the user explicitly asks, or when `save_issue` is invoked with an `estimate` parameter. The framework lives in [`story-point-estimation.md`](./story-point-estimation.md). Drafting does not estimate by default.
 
 ## Template
+
+Default output:
 
 ```markdown
 ## Context
@@ -150,23 +141,23 @@ Use only the sub-headings that apply; drop the rest.>
 
 ### Behavior
 - <"X behavior now Y. Edge: <case> returns <error>.">
-
-## Out of scope
-
-- <Item> — tracked in <ENG-XXXX / Project Y / milestone Z>.
-- <Item> — not planned (<reason>).
-- <Item> — deferred (<trigger>).
-
-## Acceptance Criteria
-
-- <Outcome statement A.>
-- <Outcome statement B.>
-- <Invariant — something that does NOT change.>
 ```
 
 Drop Scope sub-headings that don't apply. **Do not write `N/A` or "No changes."** — delete the heading. An empty heading invites the implementer to invent work or skip the section.
 
 **Where Authorization and Migration concerns go**: the boundary table above lists Authorization and Migration as separate domains for the what/how check, but the Scope template uses only Schema / API / UI / Behavior sub-headings. Fold Authorization into API or UI ("Non-admin callers receive `PermissionDenied`" → API; "Archive action is admin-only" → UI). Fold Migration semantics into Schema ("Existing rows are treated as active" → Schema). Do not invent new sub-headings.
+
+Optional sections — append only when the user explicitly asks:
+
+```markdown
+## Out of scope
+
+- <Item not being done> — <ENG-XXXX / not planned (reason) / deferred (trigger).>
+
+## Acceptance Criteria
+
+- <Outcome statement, phrased as observable state.>
+```
 
 ## Pre-delivery checklist
 
@@ -174,14 +165,15 @@ Drop Scope sub-headings that don't apply. **Do not write `N/A` or "No changes."*
 - [ ] **Scope** uses business language; no SQL, no proto signatures, no struct definitions, no implementation code.
 - [ ] **Scope** sub-headings present all have content; unused ones are deleted.
 - [ ] **Scope grounding**: every named entity / endpoint / page is grep-verified in the repo, or explicitly flagged as new.
-- [ ] **Out of scope**: every item is `tracked` / `not planned` / `deferred(trigger)`. No naked "later" / "TBD".
-- [ ] **Acceptance Criteria**: ≤3 items; outcome verbs only; ≥1 invariant; no checkboxes; no `[CONFIRM]`; no 1:1 Scope mirror.
 - [ ] No `[CONFIRM:` remains anywhere in the draft.
-- [ ] If the user asks to create the issue via `save_issue`, default `state=In Preparation`.
+- [ ] **Out of scope and Acceptance Criteria are absent** unless the user explicitly requested them.
+- [ ] If Out of scope was requested: each item names what is not being done; a destination (ticket / not planned / deferred) is included when one exists.
+- [ ] If Acceptance Criteria was requested: outcome verbs preferred; no Scope mirror.
+- [ ] If the user asks to create the issue via `save_issue`, default `state=Todo` and `labels=["AI"]`.
 
 ## Worked example — Add archive flag to accounts
 
-### ✗ Bad — sections blurred, AC restates Scope
+### ✗ Bad — sections blurred, implementation leaking up
 
 ```markdown
 ## Context
@@ -197,21 +189,12 @@ admin list can filter archived rows. Index on the column to keep filters cheap.
 
 ### API
 - Add `bool include_archived = 5` to `ListAccountsRequest`.
-
-## Out of scope
-- Bulk archive UI later.
-
-## Acceptance Criteria
-- [ ] is_archived column exists.
-- [ ] Code is reviewed and merged.
 ```
 
 What went wrong:
 
 - **Context** is a snapshot of the implementation (`is_archived`, `BOOLEAN`, `DEFAULT FALSE`, index name) — a reviewer next year doesn't need any of it; it also names a field this issue is *introducing*, not an existing surface.
 - **Scope** specifies SQL and a proto field number — locks implementation choices the PR should be free to refine.
-- **Out of scope** "later" has no destination — rots into tribal knowledge.
-- **AC** restates Scope ("column exists") and uses non-observable theatre ("code reviewed").
 
 ### ✓ Good — intent only, contract-level details preserved
 
@@ -239,26 +222,11 @@ service.
 ### Behavior
 - Archived accounts no longer appear in the admin list by default.
 - Sort order and pagination semantics are unchanged when the flag is absent.
-
-## Out of scope
-
-- Bulk archive UI — tracked in ENG-1234.
-- Auto-archive policy (inactivity threshold) — deferred (revisit after
-  archive-adoption metrics in Q3).
-- Unarchive flow — not planned (operations explicitly prefer manual
-  database edits for now).
-
-## Acceptance Criteria
-
-- Archived accounts are excluded from `ListAccounts` by default.
-- Setting the include-archived flag returns the union of archived and active.
-- Existing callers' sort order and pagination are unchanged.
 ```
 
 Why this works:
 
 - **Context** explains *who is blocked* (operations) and *why now* (3k entries, unscannable). It names the existing `accounts` admin list (allowed — already exists) but no new field, no column types, no index names. The "no prior soft-archive pattern" line is grounding output, not motivation.
 - **Scope** preserves contract-bearing details — required-ness, existing-row migration semantics, auth boundary, default behavior — without specifying SQL, proto field numbers, or code.
-- **Out of scope** uses all three tiers — `tracked`, `deferred(trigger)`, `not planned(reason)`.
-- **AC** has 3 items: 2 outcomes + 1 invariant ("sort order and pagination unchanged"). No checkboxes, no test mechanics, no Scope mirror.
-- **State on create**: `In Preparation`. Story point: not estimated unless the user asks.
+- **Out of scope and Acceptance Criteria are absent** — they're opt-in. Append them following the Optional sections template only when the user explicitly asks ("include OoS", "what's the AC").
+- **State on create**: `Todo`. **Labels on create**: `AI` (attached by default). Story point: not estimated unless the user asks.

@@ -32,13 +32,15 @@ Adjusters (additive unless noted):
   +1  Completely new pattern (no adjacent precedent in repo)
   +1  High unknowns (core problem unsolved here before / sparse docs)
   +1  Content volume (≥5 independent sub-deliverables — named templates,
-       UI states, endpoints, entity fields, pixel-level design alignment)
+       UI states, endpoints, pixel-level design alignment).
+       Field count within a single schema change does NOT count here —
+       that's already captured by the Schema adjuster.
   +1  Design density (cap +1, not stackable — see triggers below)
 
 Reducers (cap -1 total):
 
-  -1  Concentrated change + fully reversible + well-carved Out of scope
-       (any 1-3 of these → -1; never below)
+  -1  Concentrated, fully reversible change — single PR, no migration,
+       trivial revert. Both conditions required.
 
 Floor:  1 for any real work, 0 only for story-label parent containers.
 Cap:    8. If the computed value exceeds 8, split the issue and rescore.
@@ -86,7 +88,6 @@ Parent containers whose work lives in child task issues. Each child is scored in
 | Use domain-term density (`AMIT`, `s276`, `ITAA`) | Domain words don't add engineering work. They only count if they trigger External-spec authority — i.e. the term names a specification you must conform to. |
 | Add +1 because the issue bundles multiple originally-split sub-issues | Bundling is an organizational choice. Score the actual work; the bundling itself adds nothing. |
 | Count "why this design" sentences in the description | Rewards verbose authors and punishes terse-but-correct ones |
-| Add +1 because Out of scope is long | A well-carved Out of scope **lowers** the score (it's a reducer signal, not an inflation signal) |
 
 ## How to estimate — process
 
