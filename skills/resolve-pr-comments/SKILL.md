@@ -1,9 +1,11 @@
 ---
 name: resolve-pr-comments
 description: >
-  Use when the current PR has AI reviewer comments (CodeRabbit, Cursor, etc.)
-  that need to be reviewed and addressed, or when the user says "pr review",
-  "review comments", "fix review comments".
+  Use when a PR has reviewer comments or threads to address, resolve,
+  respond to, fix, or work through — from AI bots (CodeRabbit, Copilot,
+  Cursor, etc.) or human reviewers. Covers both review-only passes and
+  publish flows that commit fixes, post replies, and close GitHub
+  threads.
 ---
 
 # PR Review

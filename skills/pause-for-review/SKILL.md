@@ -1,11 +1,14 @@
 ---
 name: pause-for-review
 description: >
-  Use when an agent is generating code or executing a plan — defines the
-  decision boundaries where the agent must stop and surface a summary for
-  user review. Pauses are triggered by boundary type, not by accumulated
-  size. Trigger to evaluate "should I keep going or stop now?" before each
-  meaningful action.
+  Use before crossing a decision boundary: a direction choice (multiple
+  valid implementations), a contract commitment (public API, database
+  schema, proto/GraphQL field, migration, auth/tenant boundary, event
+  format), a costly-to-reverse action (delete data, force push, deploy
+  to shared env), after a discovery that invalidates the plan, or
+  after completing an independently reviewable slice. Not for routine
+  work inside the agreed slice — never pre-emptively, never based on
+  size.
 ---
 
 # Pause for Review
