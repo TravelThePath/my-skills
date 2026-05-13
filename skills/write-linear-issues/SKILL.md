@@ -1,6 +1,6 @@
 ---
 name: write-linear-issues
-description: Use when drafting a Linear engineering issue (feature, refactor, schema change, migration, infra task). Default output is Context + Scope only — Out of scope and Acceptance Criteria are written only when the user explicitly asks. Also trigger when rewriting an issue whose Context or Scope has blurred into code-level detail.
+description: Use when creating, writing, drafting, opening, filing, or rewriting a Linear issue or ticket for engineering scope work — feature, refactor, schema change, migration, or infra task. Not for bugs, incidents, or spikes (those use different templates). Also use when an existing issue's Context or Scope has drifted into implementation detail.
 ---
 
 # Linear Issue — Context and Scope
