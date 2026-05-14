@@ -11,6 +11,23 @@ An engineering issue is an _intent contract_, not a merge contract. It tells rev
 
 **Default output is Context + Scope only.** Out of scope and Acceptance Criteria add noise to most issues and are written only when the user explicitly asks for them.
 
+## Title
+
+Issue titles MUST be prefixed with the owning service's human-readable name, in the form `<Service Name> | <action statement>`. Separator is space-pipe-space.
+
+| ✓ Good | ✗ Bad |
+| --- | --- |
+| `Document Service \| Reject AU tax statement batch when the period is not an Australian financial year` | `Reject AU tax statement batch when …` (missing prefix) |
+| `Ranger API \| Add include_archived flag to listAccounts` | `document-service: Reject …` (wrong separator and casing) |
+| `Voyager \| Wrap AMMA title after "Trust" in member statement PDF` | `[document-service] Reject …` (brackets — use pipe) |
+
+Service-name conventions:
+- Map the repo's kebab-case name to Title Case with spaces: `document-service` → `Document Service`, `entity-service` → `Entity Service`.
+- Keep acronyms uppercase: `jasper-api` → `Jasper API`, `ranger-api` → `Ranger API`.
+- Single-word services keep their canonical casing: `voyager` → `Voyager`, `atlas` → `Atlas`, `platform` → `Platform`.
+
+When a change spans multiple services, pick the service that owns the primary entity or where the controlling change lands. Cross-service follow-ups become separate issues, each with its own service prefix.
+
 ## When to use
 
 - Drafting a new engineering issue: feature, refactor, schema change, migration, or infra task.
@@ -165,6 +182,7 @@ Optional sections — append only when the user explicitly asks:
 
 ## Pre-delivery checklist
 
+- [ ] **Title** is prefixed with `<Service Name> | ` (space-pipe-space). Service name follows the casing rules in the Title section.
 - [ ] **Context** names only existing surfaces; no fields/endpoints/components introduced by this issue.
 - [ ] **Scope** uses business language; no SQL, no proto signatures, no struct definitions, no implementation code.
 - [ ] **Scope** sub-headings present all have content; unused ones are deleted.
@@ -176,6 +194,8 @@ Optional sections — append only when the user explicitly asks:
 - [ ] If the user asks to create the issue via `save_issue`, default `state=Todo` and `labels=["AI"]`.
 
 ## Worked example — Add archive flag to accounts
+
+**Title:** `Account Service | Add archive flag to accounts list` (service prefix + action; see Title section).
 
 ### ✗ Bad — sections blurred, implementation leaking up
 
