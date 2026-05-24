@@ -25,8 +25,8 @@ codex plugin marketplace upgrade my-claude-codex
 | `pr` | Create and update PRs with diff-based title/description generation |
 | `resolve-pr-comments` | Interactive per-comment review of AI reviewer feedback on current PR |
 | `linear-issue` | Draft or rewrite engineering Linear issues using the intent-contract structure (Title / What to build / Acceptance Criteria); opt-in story point estimation |
+| `project-planning` | Convert a refined Linear project scope into milestones + vertically-sliced issues + story-point estimates, then publish to Linear |
 | `go-playbook` | Go 1.21-1.26 patterns — error handling, concurrency, testing, performance, gRPC |
-| `go-simplify` | Simplify Go code while preserving behavior; shared Claude Code/Codex skill |
 | `mysql-aurora-playbook` | MySQL 8.0 & Aurora MySQL 3 patterns — indexes, types, queries, DDL, monitoring |
 | `opsx-prompt` | Generate ticket-first `opsx:new` prompts from Linear issues, with optional deeper review |
 | `pause-for-review` | Decision boundaries where agents stop code generation for user review — direction, contract, reversibility, discovery, slice-complete — with a pause-output template |
