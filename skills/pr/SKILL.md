@@ -39,7 +39,6 @@ Still ask before:
 - Body: intent-focused, not detail-focused.
   - State the problem the PR solves, in 1-3 logical points.
   - Do NOT list files changed, manual test steps, or version numbers.
-  - Add `Closes <ISSUE-ID>` at the bottom when an issue is known.
 - Keep the body flat unless a `## Summary` heading aids reading for a multi-point change. No `## Test plan` section — change details belong in commits and automated tooling, not in a body that drifts on follow-up pushes.
 
 ### Labels
@@ -63,7 +62,6 @@ Still ask before:
 - Squash merge only.
 - Subject: PR title as-is.
 - Body: one why sentence + themed bullets (intent, not file-by-file).
-- Include any existing `Closes` line; if absent and the title carries an issue ID, add `Closes <ID>`.
 - Preconditions: all CI checks pass, including non-required ones. Do not skip a non-required check without human-reviewer justification.
 - Auto-merge is off by default; only enable when the user explicitly asks (and confirm per Authorization).
 
