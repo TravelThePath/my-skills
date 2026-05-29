@@ -121,6 +121,8 @@ For each issue:
    - `Front-end` — touches voyager / admin-app / web-app
    - `Back-end` — touches a Go service (investment-service, ranger-api, entity-service, etc.)
    - both, if the issue spans layers
+
+   These labels must already exist in the workspace (like `AI`). If issue creation fails because a label is missing, ask the user to create it once, then retry — do not silently drop the label.
 3. Call the Linear interface (CLI command, MCP, or equivalent) to create the issue with:
    - Team: `APP` (Caruso's single Linear team — do not change without explicit user instruction)
    - Project: project slug or ID from Phase 1
@@ -150,10 +152,10 @@ For each issue:
 
 Run issues in parallel within a milestone. Order across milestones does not matter when blocked-by is off (default).
 
-Clean up tempfiles after all writes succeed:
+Clean up tempfiles after all writes succeed — remove only the files this run created, not a broad `/tmp/i*` glob that could hit another session's tempfiles:
 
 ```bash
-rm /tmp/i*_body.md
+rm /tmp/i1.1_body.md /tmp/i1.2_body.md   # … list the exact files written in step 1
 ```
 
 #### 2c. Report results

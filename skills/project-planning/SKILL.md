@@ -27,7 +27,7 @@ On skill activation, do exactly this:
 |---|---|---|
 | 1 — Context | Read project + load refs + grep-verify surface area + optional deep code exploration + conditional Open-decisions gate | Linear description + grep evidence + optional explorer findings, all in chat context |
 | 2 — Shape | Milestone outline → per-milestone issue walk → final sign-off | locked shape (in chat) |
-| 3 — Draft | Per-milestone issue bodies, invoking the `linear-issue` skill once | drafts (in chat) |
+| 3 — Draft | Per-milestone issue bodies, invoking the `write-linear-issue` skill once | drafts (in chat) |
 | 4 — Publish | Pre-publish review → write to Linear | Linear issues |
 
 **Phase files**:
@@ -73,7 +73,7 @@ This skill talks to a senior engineer. At the end of each phase, ask one open qu
 
 ## External dependencies
 
-The only Skill this skill invokes via the `Skill` tool is **`linear-issue`** in Phase 3 (Draft). Everything else needed by this skill — grilling style, vertical-slice rules, shape format, phase-transition rules — is internalised in this file and the `phases/` files.
+The only Skill this skill invokes via the `Skill` tool is **`write-linear-issue`** in Phase 3 (Draft). Everything else needed by this skill — grilling style, vertical-slice rules, shape format, phase-transition rules — is internalised in this file and the `phases/` files.
 
 Linear read/write operations (project read in Phase 1, milestone + issue create in Phase 4) use whichever Linear interface is available in the workspace: a `linear` command-line tool, a Linear MCP server, or equivalent. The phase files describe Linear operations in terms of intent (read project, create milestone, create issue) — use whatever tool is actually available; don't depend on a specific binary.
 

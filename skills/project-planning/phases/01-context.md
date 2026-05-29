@@ -31,7 +31,7 @@ If the location is not obvious, search the workspace for `shared-references/caru
 
 Read the Linear project description and Decision Register using the Linear interface available in the workspace (Linear CLI command, Linear MCP server, or equivalent). Extract: project name, description, Decision Register table (if present), and any `Open` decisions.
 
-For very long descriptions, fetch and read the full text but print only the highest-signal excerpts in chat (project name, intent, key entities, Decision Register rows). The model holds the full description in working context across this session; downstream phases re-read or re-fetch as needed.
+For very long descriptions, fetch and read the full text but print only the highest-signal excerpts in chat (project name, intent, key entities, Decision Register rows). The model holds the full description in working context across this session; downstream phases re-read or re-fetch as needed. In particular, **Phase 3 re-reads the verbatim `Decision Register` / `Product Acceptance Criteria` / key-flow sections per issue** (re-fetching from Linear if they have fallen out of context) rather than grounding on these summarized excerpts.
 
 **Scope edits to the Linear project description are only allowed during Phase 1 (any step).** If a scope edit is needed, propose the surgical change in chat (show old → new wording), get explicit user approval, then write back via the available Linear interface. Once Phase 1 exits, the description is frozen for the rest of the session — downstream phases work with it as-is.
 

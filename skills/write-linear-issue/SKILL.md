@@ -7,7 +7,19 @@ description: Use when creating, writing, drafting, opening, filing, or rewriting
 
 An engineering issue is an _intent contract_, not a merge contract. It tells the implementer **what** to build and how to recognize it's done. **Why** (motivation, stakeholder, urgency) lives in the Linear project description, not the issue. **How** (file paths, code syntax) lives in the PR.
 
-The issue body has exactly two sections: **What to build** and **Acceptance Criteria**. Both are mandatory.
+The issue body has exactly two sections: **What to build** and **Acceptance Criteria**. Both are mandatory. No `## Context` / `## Background` / motivation section — that's **why**, and it lives in the project. Dependencies are expressed as Linear blocked-by relations, not as a `Blocked by` list or dependency prose in the body.
+
+## Ground every claim in the source of truth
+
+The issue **restates** its requirement so it reads self-contained — never "see Section 3." But every behavioral claim must come from the source of truth, not from memory. For project work the source is the Linear project description — its `Decision Register`, `Product Acceptance Criteria`, and the relevant key-flow section when present. When the description is thin or lacks those sections, fall back to the most authoritative statement it does contain; for a one-off issue with no spec at all, the user's stated requirement is the source.
+
+Re-derivation from a half-remembered spec is how issues drift. Guard against it:
+
+- **Re-read before drafting.** Open the source sections this issue implements and read them verbatim — do not reconstruct decided behavior from earlier context.
+- **Carry decided values verbatim.** Exact widths, limits, field names, strings, fallbacks — copy them, don't paraphrase. Paraphrase is where drift enters.
+- **Cite the decision inline.** Name the source decision as provenance while restating the requirement: "… per the project's `Decision Register` row on the reconciliation reference." This keeps the issue self-contained *and* traceable — and naming the decision forces you to actually find it.
+- **Never revive a dropped decision.** If the source marks an option dropped / superseded / out of scope, describe only what replaced it. A value the spec explicitly retired must never reappear.
+- **`[CONFIRM:]` covers behavior, not just names.** Any behavioral claim you can't trace to a source line gets `[CONFIRM: <question>]`, exactly like an unverifiable identifier.
 
 ## Title
 
@@ -22,7 +34,14 @@ Use `<Service Name> | <action statement>` (space-pipe-space). Write the service 
 
 Describe **what** the issue produces — entities, fields, surfaces, behaviors — in business language. Do not write **how** (file paths or code syntax: DDL, SQL, proto, function or field declarations) and do not write **why** (motivation, stakeholder ask, urgency).
 
-Prose, bullets, or both — pick whatever reads clearest for the change. No required sub-headings; if the change touches enough surfaces that ad-hoc headings would help readability, add them, but don't add a heading just to fill space.
+Prose, bullets, or both — pick whatever reads clearest for the change. Default to bullets when the change touches several surfaces; they scan better than dense prose. No required sub-headings; add ad-hoc headings only when they earn their place.
+
+Keep it tight — concise, not thin:
+
+- **One new fact per line.** Every sentence or bullet must add something the previous lines and the anchors don't already carry. Cut the rest.
+- **Restate the requirement, drop the noise.** Keep behavior, fields, surfaces, decided values, anchors. Drop motivation, PR-level how, invented detail, and filler ("can start immediately", "None —").
+- **Don't echo the AC.** What to build says what to produce; AC says how you'd observe it — don't write the same sentence twice.
+- **No length cap** — but if What to build balloons, it's usually a tell: you're restating *why* / *how*, duplicating the AC, or covering more than one service / slice (split it).
 
 ### Code anchors are allowed; code snippets are not
 
@@ -42,67 +61,72 @@ The rule is "no file paths, no code snippets," **not** "no identifiers." Naming 
 
 ## Acceptance Criteria
 
-List the **observable end-state** that must be true once the work is done — from the caller's, user's, or database's point of view.
+List the **observable end-state** that must be true once the work is done — from the caller's, user's, or database's point of view. For project work, select the `Product Acceptance Criteria` rows this issue covers and restate each from an observable angle — don't invent criteria the source doesn't have.
 
 Not a test plan: no `Run`, `Verify`, `Check`.
 
-AC may overlap with What to build, but must restate from an observable angle. If What to build says "exposes `bankCode`", AC says "querying `AUDBankAccountBankAccountLocationDetails` on an existing AUD bank account returns the persisted `bankCode` value."
+AC may overlap with What to build, but must restate from an observable angle, not repeat its wording. If What to build says "exposes `bankCode`", AC says "querying `AUDBankAccountBankAccountLocationDetails` on an existing AUD bank account returns the persisted `bankCode` value."
 
 ## Process
 
 1. **Classify.** Bug / incident retro / spike / product scoping → use the matching template, not this one.
-2. **Draft** Title + What to build + AC. When you write any entity / API / page / type name, grep the repo and use the real name from code. For anything you can't verify, mark `[CONFIRM: <question>]` inline — never silently guess.
-3. **Resolve & deliver.** Clear every `[CONFIRM:]` with the user. If they ask you to create the issue in Linear, call `save_issue` with `state=Todo` and `labels=["AI"]`. The `AI` label must already exist in the workspace; if `save_issue` fails because the label is missing, ask the user to create it once.
+2. **Ground, then draft.** Re-read the source verbatim per the **Ground every claim** rules above, then draft Title + What to build + AC. Grep the repo for every entity / API / page / type name and use the real name from code. Mark anything you can't trace to the source or the code — a value *or* a behavior — `[CONFIRM: <question>]` inline; never silently guess.
+3. **Resolve & deliver.** Clear every `[CONFIRM:]` with the user before delivering. (When an orchestrating skill drives drafting in batches, surface unresolved `[CONFIRM:]` in that flow's review checkpoint rather than blocking each issue.) If they ask you to create the issue in Linear, use the Linear interface available in the workspace (CLI command, MCP, or equivalent) to create it with `state=Todo`, the estimate, and the `AI` label. The `AI` label must already exist in the workspace; if creation fails because the label is missing, ask the user to create it once.
 
-Story-point estimation is opt-in. Run it only when the user explicitly asks or when `save_issue` is invoked with an `estimate` parameter. The framework lives in [`story-point-estimation.md`](./story-point-estimation.md).
+Story-point estimation runs by default — produce an estimate for every issue using the framework in [`story-point-estimation.md`](./story-point-estimation.md). Skip it only when the user opts out, or for a pure parent / `Story` container scored from its children. An orchestrating skill (e.g. `project-planning`) may set this choice once for a whole batch.
 
 ## Pre-delivery checklist
 
 - [ ] **Title** uses `<Service Name> | <action>`; service name matches the casing the repo/docs use.
 - [ ] **What to build** says only **what**, never **how** or **why**. Backticked identifiers are OK; file paths and code syntax are not.
+- [ ] Every behavioral claim traces to a source line (`Decision Register` / `Product Acceptance Criteria` / key-flow) or the user's stated requirement; decided values are carried verbatim and the source decision is cited inline.
+- [ ] No decision the source marks dropped / superseded / out of scope appears in the draft.
+- [ ] Self-contained: no "see Section X" pointer standing in for content; no `## Context` / motivation section; no `Blocked by` / dependency list in the body.
 - [ ] Every entity / API / page / type name in What to build is grep-verified in the repo or explicitly flagged as new.
-- [ ] **AC** describes observable end-state from the caller / user / DB perspective — no `Run`, `Verify`, `Check`.
+- [ ] **AC** describes observable end-state from the caller / user / DB perspective — no `Run`, `Verify`, `Check` — and doesn't repeat What to build's wording.
 - [ ] No `[CONFIRM:` remains in the draft.
 
-## Worked example — Expose AUD bank fields on Ranger API
+## Worked example — ABA detail record Lodgement Reference
 
-**Title:** `Ranger API | Expose bank_code and direct_entry_user_id on AUD bank accounts`
+This field has a value decided in the project's `Decision Register` *and* a wrong version the register explicitly dropped — the cleanest test of grounding vs improvisation. `APP-22835` is a live in-repo issue with the same self-contained, provenance-cited shape.
 
-### ✗ Bad — file paths, motivation, code syntax, test-plan AC
+**Title:** `Investment Service | Set ABA Lodgement Reference from the payee IE payment reference`
+
+### ✗ Bad — revives a dropped decision, conflates limits, invents behavior
 
 ```markdown
 ## What to build
 
-Operations need BSB codes so they can reconcile direct debit batches before quarter-end. Add a `BankCode string` field and a `DirectEntryUserID string` field to the AUD struct in `ranger-api/internal/graph/resolver/bank_account.go`, then run `ALTER TABLE bank_accounts ADD COLUMN bank_code VARCHAR(6)` in investment-service, and add `bool bank_code = 12` to the proto.
+The ABA detail record Lodgement Reference is the last 6 digits of the IE ID zero-padded, followed by the description truncated to 12 characters, 18 characters total. If two IE IDs share the same last 6 digits, emit a warn-level log.
 
 ## Acceptance Criteria
 
-- Run a GraphQL query that fetches `bankCode`; verify the response is not null.
-- Check that the new column exists in production.
+- Run a payment pack and verify the Lodgement Reference is populated.
 ```
 
 What went wrong:
 
-- Opens with motivation ("Operations need BSB codes so they can reconcile…"). Motivation belongs in the Linear project, not the issue.
-- Names a file path (`ranger-api/internal/...`), inline DDL (`ALTER TABLE …`), proto syntax (`bool bank_code = 12`), and Go field types (`BankCode string`) — all PR concerns.
-- AC uses imperative `Run` / `Verify` / `Check` — that's a test plan, not an end-state.
+- Revives the `{IE_ID}{description}` composite the `Decision Register` **explicitly drops** — rebuilt from memory instead of re-reading the decided value.
+- `truncated to 12` is the Other Payment File `Code` rule; the ABA field is 18 — two decided values conflated.
+- The last-6-collision warn log is nowhere in the source — invented.
+- AC is a test step (`Run … verify`) and restates What to build instead of giving an observable outcome.
 
-### ✓ Good — code anchors, observable AC, no motivation, no code syntax
+### ✓ Good — verbatim decided value, provenance cited inline, anchored to code
 
 ```markdown
 ## What to build
 
-Ranger API's admin gRPC client surfaces `bank_code` and `direct_entry_user_id` on the AUD branch of `BankAccountLocationDetails`. Ranger API GraphQL exposes `bankCode` and `directEntryUserId` on the existing shared `AUDBankAccountBankAccountLocationDetails` type and its input counterpart `AUDBankAccountInput`. Both fields are optional; non-AUD branches are unaffected.
+Populate the ABA detail record **Lodgement Reference** (18 chars) per the project's `Decision Register` row on the reconciliation reference: primary value is the payee Investing Entity's `paymentReference`, truncated to 18 if longer; when unset, fall back to the Investing Entity ID per that same register row. Left-aligned, space-padded to 18.
 
 ## Acceptance Criteria
 
-- Querying `AUDBankAccountBankAccountLocationDetails` on an existing AUD bank account returns the persisted `bankCode` and `directEntryUserId` values, or `null` when not yet set.
-- Submitting `AUDBankAccountInput` with `bankCode` and `directEntryUserId` persists both fields, and a subsequent query returns the submitted values.
-- Non-AUD `BankAccountLocationDetails` variants are unchanged in both gRPC and GraphQL schemas.
+- A payee whose Investing Entity has `paymentReference` set produces a Lodgement Reference equal to that value, truncated to 18 and space-padded to 18.
+- A payee whose Investing Entity has no `paymentReference` falls back to the Investing Entity ID per the register row, space-padded to 18.
 ```
 
 Why this works:
 
-- Names every identifier in the casing each surface uses (`bank_code` for gRPC, `bankCode` for GraphQL) and anchors them to existing types (`BankAccountLocationDetails`, `AUDBankAccountInput`) — the implementer goes straight to the right files without the issue prescribing them.
-- No motivation, no file paths, no DDL, no proto syntax — those live in the Linear project and the PR respectively.
-- AC restates the contract from the caller's vantage point ("Querying … returns …", "Submitting … persists …") instead of mirroring What to build or listing test steps.
+- Carries the decided values verbatim (18-char width, primary `paymentReference`, register-defined fallback) — nothing paraphrased, nothing invented; the exact fallback is whatever the register currently says, re-read at draft time, not a value memorised from an earlier version.
+- Cites the source decision inline (`Decision Register` row) — traceable, yet self-contained: the reader never opens the spec.
+- Anchors to the real field `paymentReference` and the Investing Entity ID from code.
+- AC restates each branch as an observable outcome, not a test step, and doesn't echo What to build's wording.
