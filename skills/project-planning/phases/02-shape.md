@@ -45,7 +45,7 @@ In one response, produce:
    | ... | ... | ... | TBD |
    | Project total | — | <T> | TBD |
 
-   Milestone titles name the **deliverable**, not the team or layer (`Distribution Payment Pack`, not `Backend work`). Planned-issues column carries an estimate; the real count locks at Step C. Total points stays TBD throughout Phase 2 — Phase 3 fills it via `write-linear-issue`.
+   Milestone titles name the **deliverable**, not the team or layer (`Distribution Payment Pack`, not `Backend work`). Planned-issues column carries an estimate; the real count locks at Step C. Total points stays TBD throughout Phase 2 — Phase 3 fills it via the issue-writer skill.
 
 2. **One open question**, e.g.: "Milestone outline above. Before I shape each one's issues — does this split look right?"
 
@@ -76,7 +76,7 @@ For each milestone:
      Points: TBD
    ```
 
-   Issue titles use the convention `<Service> | <verb> <object>` (matches `write-linear-issue` skill's Title rule). Service prefix uses Title Case: `Investment Service`, `Ranger API`, `Voyager`.
+   Issue titles use the working-title format `<Service> | <verb> <object>` (the issue-writer skill finalizes the Title in Phase 3). Service prefix uses Title Case: `Investment Service`, `Ranger API`, `Voyager`.
 
    **Cross-milestone Blocked-by references** get an inline tag so the user does not have to scroll back. Format: `Blocked by: I<x.y> (M<x>: <2-4 word tag from the referenced issue's title>)` — e.g. `Blocked by: I1.2 (M1: Calc API)` when I1.2's title is `Investment Service | Build distribution calc API`. Same-milestone references stay bare: `Blocked by: I3.1`.
 
@@ -85,7 +85,7 @@ For each milestone:
 4. **Wait for the user's reply.** Read it and act:
    - Approval → advance to the next milestone, or to Step C if this was the last.
    - Within-milestone feedback (rename / split / merge an issue here, flip its AFK/HITL, edit its Blocked-by within this milestone) → patch in one response and re-present.
-   - Anything that touches a locked milestone, the outline itself (add/remove a milestone, move a boundary), or otherwise leaves the current milestone's scope → judge in context. Read the reply, propose the cleanest path back (which step to roll back to and why), and confirm once before acting. Cross-cutting Grilling style rules in `SKILL.md` cover the rest.
+   - Anything that touches a locked milestone, the outline itself (add/remove a milestone, move a boundary), or otherwise leaves the current milestone's scope → judge in context. Read the reply, propose the cleanest path back (which step to roll back to and why), and confirm once before acting. Cross-cutting Interaction style rules in `SKILL.md` cover the rest.
 
 ### Step C — Final sign-off
 
@@ -113,7 +113,7 @@ Step C has no in-place patch surface — it shows only milestone names and count
 - **No two siblings in a milestone may touch the same file.** If shape would violate this, extract a foundation issue or restructure before presenting that milestone.
 - **Every issue must have Type (AFK / HITL).** Don't leave blank.
 - **Every issue must have Blocked by line** (write `none` if no blockers).
-- **Story points are filled in Phase 3** after `write-linear-issue` is loaded. In Phase 2, every issue's Points line is `TBD`. Do not estimate yet — Phase 2's job is shape, not sizing.
+- **Story points are filled in Phase 3** after the issue-writer skill is loaded. In Phase 2, every issue's Points line is `TBD`. Do not estimate yet — Phase 2's job is shape, not sizing.
 - **No parallel timeline, no dep-graph ASCII.** Blocked-by lines per issue are the only dependency representation in this skill.
 
 ---

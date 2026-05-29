@@ -5,7 +5,7 @@ description: Use when creating, writing, drafting, opening, filing, or rewriting
 
 # Linear Issue — What to build + AC
 
-An engineering issue is an _intent contract_, not a merge contract. It tells the implementer **what** to build and how to recognize it's done. **Why** (motivation, stakeholder, urgency) lives in the Linear project description, not the issue. **How** (file paths, code syntax) lives in the PR.
+An engineering issue is an _intent contract_, not a merge contract: it states **what** to build and how to recognize it's done. **Why** (motivation, stakeholder, urgency) lives in the Linear project description; **how** (file paths, code syntax) lives in the PR.
 
 The issue body has exactly two sections: **What to build** and **Acceptance Criteria**. Both are mandatory. No `## Context` / `## Background` / motivation section — that's **why**, and it lives in the project. Dependencies are expressed as Linear blocked-by relations, not as a `Blocked by` list or dependency prose in the body.
 
