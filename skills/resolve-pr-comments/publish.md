@@ -8,7 +8,7 @@ Reached when every item has a verdict (no open `high`/`ask`). One flow, with a c
    - `git diff --stat` and a focused summary per changed file (if any Fix)
    - verification commands and their results
    - the reply that will be posted to each thread
-   - threads to resolve, and any Defer follow-up drafts
+   - threads to resolve, outdated threads to resolve without a reply (count + one-line each), and any Defer follow-up drafts
 
 2. **Authorization.**
    - Explicit `resolve` / `fix` / `publish` request → authorized, continue.
@@ -19,7 +19,7 @@ Reached when every item has a verdict (no open `high`/`ask`). One flow, with a c
    - Do not run a fresh CodeRabbit/uncommitted review — this skill is already responding to existing review.
    - Commit with a descriptive message and push.
 
-4. **Reply + resolve.** Re-fetch PR head and unresolved thread IDs (state may have moved since Step 1). For each `Defer`, create the follow-up issue/note first so its reply cites a real reference. Post each reply, then resolve each processed thread. Print only `All replies posted. Now resolving threads.` then `All N threads resolved.`
+4. **Reply + resolve.** Re-fetch PR head and unresolved thread IDs (state may have moved since Step 1). For each `Defer`, create the follow-up issue/note first so its reply cites a real reference. Post each reply, then resolve each processed thread. Resolve any outdated threads in the same pass — **without a reply**. Print only `All replies posted. Now resolving threads.` then `All N threads resolved.`
 
 ## Stop conditions
 
@@ -34,7 +34,7 @@ Stop before any GitHub write (commit, push, reply, resolve) and ask, naming the 
 
 ## Replies
 
-Every thread gets a reply before it is resolved. Never resolve silently.
+Every thread gets a reply before it is resolved. Never resolve silently — **except outdated threads** (`is_outdated`), which are resolved without a reply because the code they referenced no longer exists. This is the only exception.
 
 | Verdict | Reply |
 | --- | --- |

@@ -37,7 +37,7 @@ One vocabulary for both your recommendation and the user's choice.
 
 **The one hard rule:** `Fix` requires concrete evidence. If the Evidence field would be empty or a paraphrase of the bot's text, you have not verified it — pick `Reply`, `Defer`, or `Ask`. Never invent evidence to justify a Fix. `Ask` is non-terminal: the user must convert it to Fix/Reply/Defer before publish.
 
-**Reviewer signal** affects scrutiny and order, never the verdict. Human comments: never auto-resolve; if unclear, `Reply` or `Ask`. Bots (CodeRabbit/Codex/Cursor/Copilot): credible hypotheses, verify against current code before `Fix`. High signal does not earn a `Fix` — evidence does.
+**Reviewer signal** affects scrutiny and order, never the verdict. Human comments: never auto-resolve; if unclear, `Reply` or `Ask`. CodeRabbit / Codex / Cursor: credible hypotheses — verify against current code before `Fix`. Copilot and unknown bots: low signal — demand concrete current-code evidence before queuing any `Fix`, and review them last. High signal does not earn a `Fix` — evidence does.
 
 ## Step 1 — Fetch
 
@@ -51,7 +51,9 @@ For explicit PRs: `--repo OWNER/REPO --pr 123` or `--url <pr-url>`. The script d
 
 The output can be large — bots embed walkthroughs and base64 state. Read it with `jq`/grep to pull out threads and review bodies; do not dump the whole file into your response.
 
-**Actionable** = unresolved inline threads — including security-scanner threads (CodeQL/Snyk) that point at a `file:line`, which are findings, not gates — plus review-body findings, including a nitpick that lives only in a review body with no thread of its own. **Drop as non-actionable** (do not card, reply, or resolve): CI/coverage gate status comments, Linear/Jira linkbacks, bot walkthrough/summary comments, the content-free "review" envelope a bot posts alongside its inline threads (the real findings are the threads, not the envelope), `@bot` trigger comments, and PR-author status updates (use the last only as a staleness signal).
+**Actionable** = unresolved inline threads — including security-scanner threads (CodeQL/Snyk) that point at a `file:line`, which are findings, not gates — plus substantive review-body findings. **Drop as non-actionable** (do not card, reply, or resolve): automated reviewer comments explicitly labeled `Nitpick` (report only a count, e.g. `Nitpicks ignored: 4` — never analyze, reply to, or resolve them), CI/coverage gate status comments, Linear/Jira linkbacks, bot walkthrough/summary comments, the content-free "review" envelope a bot posts alongside its inline threads (the real findings are the threads, not the envelope), `@bot` trigger comments, and PR-author status updates (use the last only as a staleness signal).
+
+**Outdated threads** (`is_outdated`, kept by the fetch script): not actionable — list each as a one-line summary so the user sees them, and in the publish step **resolve them directly without a reply** (the code they referenced is gone). This is the one exception to reply-before-resolve.
 
 If nothing actionable remains, output `No review comments found` and stop.
 
