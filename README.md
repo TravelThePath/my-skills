@@ -28,7 +28,6 @@ codex plugin marketplace upgrade my-claude-codex
 | `project-planning` | Convert a refined Linear project scope into milestones + vertically-sliced issues + story-point estimates, then publish to Linear |
 | `go-playbook` | Go 1.21-1.26 patterns — error handling, concurrency, testing, performance, gRPC |
 | `mysql-aurora-playbook` | MySQL 8.0 & Aurora MySQL 3 patterns — indexes, types, queries, DDL, monitoring |
-| `opsx-prompt` | Generate ticket-first `opsx:new` prompts from Linear issues, with optional deeper review |
 | `pause-for-review` | Decision boundaries where agents stop code generation for user review — direction, contract, reversibility, discovery, slice-complete — with a pause-output template |
 
 ## License

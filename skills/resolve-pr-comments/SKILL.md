@@ -8,9 +8,9 @@ description: >
   threads.
 ---
 
-# PR Review
+# Resolve PR Comments
 
-Work through unresolved PR review feedback with thread-aware data, independent analysis, user-controlled decisions, and low-friction GitHub thread closure.
+Work through unresolved PR review feedback. The core loop is **code-first**: for each thread, read the current code, reach your own verdict, then say whether the bot was right. The bot's claim is a hypothesis to verify, not a conclusion to defend.
 
 ## Prerequisites
 
@@ -19,104 +19,108 @@ Work through unresolved PR review feedback with thread-aware data, independent a
 
 ## Platform Rules
 
-- Use `gh` for all GitHub API calls. Do not use GitHub MCP tools for thread-aware review data.
-- Claude Code blocking choices: use `AskUserQuestion`.
-- Codex or other environments without `AskUserQuestion`: ask the question in plain text and stop until the user replies.
-- Keep user-facing output compact: show decisions, blockers, previews, and outcomes; keep raw tool/API output out of assistant responses.
-- Treat an explicit resolve/fix/publish request (for example, `resolve PR comments`, `fix review comments`, or `publish the fixes`) as authorization for this skill's publish lane after all required comment decisions are recorded and verification/local review pass. Broad review-only requests such as `pr review` or `review comments` do not authorize commit, push, reply, or resolve writes; ask once before publishing.
-- Do not run a fresh CodeRabbit/uncommitted review for follow-up fixes made by this skill; the task is already responding to existing review feedback. Run a local review checklist focused on decision/diff alignment and verification instead.
-- If the diff includes new implementation work beyond the processed review comments, stop before commit/push and return to the normal repository Git workflow.
-- For comments fixed by code, commit and push before posting "Fixed in <commit>" replies or resolving threads. For no-code comments, post planned replies and resolve processed threads after the preview. Ask before GitHub thread writes only when a publish blocker makes the planned action unsafe or stale.
+- Use `gh` for all GitHub calls. Do not use GitHub MCP tools.
+- Blocking choices: `AskUserQuestion` in Claude Code; plain text + stop elsewhere.
+- Keep output compact: show verdicts, blockers, previews, outcomes. Keep raw API output out of responses.
+- An explicit `resolve` / `fix` / `publish` request authorizes the publish lane (see `publish.md`) once every item has a recorded verdict. A review-only request (`pr review`, `review comments`) does not — ask once before any GitHub write.
 
-## Glossary
+## Verdicts
 
-- **Inline comment**: review-thread comment with `thread_id`, `is_resolved`, and `is_outdated`.
-- **PR-level comment**: conversation comment with no resolved state.
-- **Review body**: top-level body from a submitted review.
-- **Actionable**: a comment for which the agent must produce a `recommendation` and the user must record a `decision`.
-- **Recommendation** (agent output, 4 values): `Fix`, `Defer`, `Reply only`, `Needs your decision`. Displayed on the card.
-- **Decision** (user choice, 3 values): `Fix`, `Defer`, `Reply only`. The publishable terminal actions. `Needs your decision` is NOT a valid decision.
-- **Defer**: valid concern, not fixed in this PR; prepare a follow-up issue draft or tracking note.
-- **Reply only**: no code change in this PR; post a reply (concise for noise/style, fuller for substantive concerns) and resolve the thread.
-- **Needs your decision**: agent-side recommendation signal — agent cannot verify the bot's claim within this repo (cross-service ownership, PR-description-vs-code conflict, missing-proof concerns spanning systems, or any case where the agent lacks the domain context to judge). The user must convert it into `Fix`, `Defer`, or `Reply only` before the workflow advances.
+One vocabulary for both your recommendation and the user's choice.
 
-## Step 1 - Fetch and Classify
+| Verdict | Meaning | Requires |
+| --- | --- | --- |
+| **Fix** | Change code in this PR, reply `Fixed in <commit>`, resolve. | Concrete evidence: a `file:line` + quote, or a grep/diff/test result confirming the issue in current code. |
+| **Reply** | No code change. Post an explanation, resolve. Covers stale, already-handled, convention-mismatch, and noise. | Evidence the bot's specific claim does not match current code. |
+| **Defer** | Like Reply, but the concern deserves tracked follow-up — also create a follow-up issue/note. Use Reply, not Defer, when acknowledging without tracking. | Evidence the concern is real but belongs in separate work. |
+| **Ask** | You cannot judge within this repo (cross-service contract, production/migration state, product tradeoff). Hand it to the user. | Evidence field reads `none; bot's claim is about <cross-file \| ownership \| process \| product>`. |
 
-Run the deterministic fetch script from this skill directory while keeping the shell working directory at the target repo:
+**The one hard rule:** `Fix` requires concrete evidence. If the Evidence field would be empty or a paraphrase of the bot's text, you have not verified it — pick `Reply`, `Defer`, or `Ask`. Never invent evidence to justify a Fix. `Ask` is non-terminal: the user must convert it to Fix/Reply/Defer before publish.
+
+**Reviewer signal** affects scrutiny and order, never the verdict. Human comments: never auto-resolve; if unclear, `Reply` or `Ask`. Bots (CodeRabbit/Codex/Cursor/Copilot): credible hypotheses, verify against current code before `Fix`. High signal does not earn a `Fix` — evidence does.
+
+## Step 1 — Fetch
+
+Run from the target repo (keep the shell cwd there):
 
 ```bash
-python3 <resolve-pr-comments-skill-dir>/scripts/fetch-comments.py
+python3 <skill-dir>/scripts/fetch-comments.py
 ```
 
-For explicit PRs, use `--repo OWNER/REPO --pr 123` or `--url <pr-url>`.
+For explicit PRs: `--repo OWNER/REPO --pr 123` or `--url <pr-url>`. The script drops resolved threads and prior skill replies at the source, and fail-fast checks the PR `head_sha` against local `git rev-parse HEAD`. On a mismatch, stop and ask the user to checkout/update the branch — do not analyze against a stale checkout. If the script cannot run, fetch unresolved threads, PR-level comments, and review bodies with `gh api graphql` directly.
 
-The script fetches PR metadata first and fail-fast checks the fetched `head_sha` against local `git rev-parse HEAD` when running inside a git checkout. If it reports a mismatch, stop before analysis and ask the user to checkout or update the PR branch. Do not analyze or fix review comments against a mismatched local checkout.
+The output can be large — bots embed walkthroughs and base64 state. Read it with `jq`/grep to pull out threads and review bodies; do not dump the whole file into your response.
 
-Read `analyzing.md`, then classify the raw JSON into:
+**Actionable** = unresolved inline threads — including security-scanner threads (CodeQL/Snyk) that point at a `file:line`, which are findings, not gates — plus review-body findings, including a nitpick that lives only in a review body with no thread of its own. **Drop as non-actionable** (do not card, reply, or resolve): CI/coverage gate status comments, Linear/Jira linkbacks, bot walkthrough/summary comments, the content-free "review" envelope a bot posts alongside its inline threads (the real findings are the threads, not the envelope), `@bot` trigger comments, and PR-author status updates (use the last only as a staleness signal).
 
-- `outdated[]`
-- `copilot_triage[]`
-- `nitpick_triage[]`
-- `critical_major[]`
-- `medium_low[]`
-- `reply_only[]`
-- `deferred[]`
-- `thread_map[]`
+If nothing actionable remains, output `No review comments found` and stop.
 
-Severity controls presentation. Include reviewer-labeled Critical/Major/High/P0/P1 items in `critical_major[]` unless they are resolved, outdated, or pure bot noise. Do not move a Critical/Major item into `reply_only[]`, `deferred[]`, or `medium_low[]` just because its recommendation is `Reply only`, `Defer`, `Needs your decision`, or a downgraded severity; keep it in `critical_major[]` so Step 3 presents it one item at a time.
+## Step 2 — Verdict (code-first)
 
-If the script cannot run, use the fallback fetch rules in `analyzing.md`.
+For each thread, before forming a verdict, gather:
 
-If all buckets are empty (`outdated[]`, `copilot_triage[]`, `nitpick_triage[]`, `critical_major[]`, `medium_low[]`, `reply_only[]`, `deferred[]`), output "No review comments found" and stop.
+1. The focused diff: `git diff $(gh pr view --json baseRefName -q .baseRefName)...HEAD -- <path>`
+2. The function/method containing the flagged line, plus nearby conventions (`CLAUDE.md`/`AGENTS.md`, lints, peer code).
+3. For PR-level comments: the PR description and changed-file summary.
 
-## Step 2 - Triage Summary
+Then judge **the current code**, not the bot's text: does the issue exist here, right now? Assign a verdict from the table above and an impact:
 
-Show only a short count summary. Do not recommend decisions, synthesize the "main blocker", or present a global fix plan here.
+- **`high`** — security, data loss, panic/crash on normal input, state-corrupting race, broken error handling, API-contract break, deploy/migration risk, resource leak.
+- **`normal`** — everything else (edge cases, missing tests, readability, naming, style, nits).
+
+Impact is your read of the code, not the bot's label. A bot-labelled "Critical" that the code disproves is `normal` + `Reply`. Drop items only when the code shows the issue cannot exist (e.g. the line moved and the claim is now false) — and even then, `Reply` to say so. When genuinely unsure, include it; over-including is recoverable, dropping real feedback is invisible.
+
+**Dedupe** only when comments hit the same file/topic, point at the same function/path, ask for the same action category, and share ≥2 meaningful keywords. List all reviewers in the header (`[coderabbit/cursor]`), synthesize their angles in `Wants`, reply to each thread.
+
+## Step 3 — Present
+
+One list, sorted by impact (`high` first, then `ask`, then `normal`). 5 items per page, global numbering. One card template — do not add fields.
 
 ```text
-── Review Comment Triage ──────────────────
-PR: OWNER/REPO#123
-Outdated: 2
-Copilot auto-skipped: 3
-Nitpick ignored: 4
-Critical/Major: 1
-Medium/Low: 7
-Reply only: 1
-Deferred: 0
+── PR OWNER/REPO#123 — 3 threads ──────────
+
+[high] #1 worker.go:42  [coderabbit]  → Fix
+Problem: the worker loop ignores ctx.Done(); a timed-out request leaves the goroutine running.
+Wants:   add a ctx.Done() branch to the select.
+Evidence: worker.go:42 — `select { case w := <-work: …; case r := <-results: … }`, no ctx.Done() case.
+Reason:  confirmed in current code; the leak is real, so Fix.
+
+[ask]  #2 migration.sql  [coderabbit]  → Ask
+Problem: is this migration safe under concurrent writes?
+Wants:   confirmation or a plan.
+Evidence: none; bot's claim is about process (prod traffic + lock timing).
+Reason:  cannot verify within this repo; needs your call.
+
+[norm] #3 model.go:33  [coderabbit]  → Reply
+Problem: reviewer wants an unused option removed.
+Wants:   delete the option here.
+Evidence: model.go:33 — declared, unused; peers keep it for interface symmetry (model_a.go:41).
+Reason:  removing it breaks the shared interface shape; explain in reply.
+
+ok / ok all confirms normal-impact defaults only.
+high (#1) and ask (#2) stay open — address each explicitly.
+
+Reply with: ok · ok all · fix N · reply N · defer N · ask N · why N  (combinable: reply 3, defer 4)
 ```
 
-For outdated and Copilot auto-triage, show one-line summaries. For nitpick auto-triage, show the count only. Do not spend user attention on full templates for already-triaged noise.
+Writing style for `Problem`/`Wants`/`Evidence`/`Reason`: short, conclusion first, name the exact function/field/line. "This breaks because…" / "This is safe because…". No reviewer echo ("Consider adding…"), no hedging ("might", "could potentially"), no vague nouns ("logic", "handling", "issue").
 
-Do not render a per-thread preview table or per-item one-liners for any actionable bucket (no "Fetched N review threads" table with bot / file:line / severity / summary columns; no per-thread one-liners for Critical/Major or Medium/Low). Per-item presentation lives in Step 3 / Step 4 with the full required fields.
+| Input | Behavior |
+| --- | --- |
+| `ok` / `done` | Confirm this page's `normal` defaults. `high` and `ask` items stay open. |
+| `ok all` | Same, across all remaining pages. `high`/`ask` still stay open. |
+| `fix N` / `reply N` / `defer N` / `ask N` | Set the verdict for item N. Ranges/lists ok: `fix 1,3`, `reply 1-4`. |
+| `why N` | Explain the verdict without changing it. |
 
-After the count summary, immediately proceed to Step 3 if there are Critical/Major items. If there are no Critical/Major items, proceed to Step 4. Do not stop after the summary unless there are no actionable comments. If only `outdated[]`, `copilot_triage[]`, or `nitpick_triage[]` items remain, stop after the summary.
+For PR-level comments, add a `Signals:` line before `Problem` (positive reactions from the reviewer/author, later author follow-ups, whether the PR was updated after the comment). Show them; never auto-resolve on signals alone.
 
-## Step 3 - Critical/Major Review
+## Step 4 — Publish
 
-Read `analyzing.md` and `presenting.md`. Present exactly one deduplicated Critical/Major item at a time using the detailed card and choices from `presenting.md`.
-
-Hard rule: every Critical/Major item requires an explicit user decision before moving on. Even when the recommendation is clearly `Reply only` or `Needs your decision`, present the card, state the recommendation, ask for a decision, and stop. Do not batch Critical/Major items, ask for decisions on multiple Critical/Major items at once, or advance to the next Critical/Major item without a recorded decision for the current one.
-
-Critical/Major items must go through deep analysis per `analyzing.md`: read the focused diff, the surrounding function/method, repo conventions (`CLAUDE.md`/`AGENTS.md`/lints/peer code), and PR description for PR-level items. The presentation card must include concrete `Code evidence` — a `file:line` quote, a grep/diff/test artifact, or an explicit `"no concrete evidence available; bot's claim is about <category>"` note. The one rule: `Fix` requires concrete code evidence; without it, pick `Defer`, `Reply only`, or `Needs your decision` based on the case. Do not invent or paraphrase evidence to justify `Fix`.
-
-If deep analysis downgrades a Critical/Major item below Major, keep it in the current Step 3 flow, show the downgraded severity in the card, and still ask for the user decision before moving on. Do not silently move it to Step 4 after it has entered Critical/Major review.
-
-## Step 4 - Medium/Low Review
-
-Read `presenting.md`. Use compact cards by default, 5 items per page with global numbering. Full deep analysis is available through `review N`; promoted items use Step 3 choices.
-
-## Step 5 - Fix Plan and Implementation
-
-Read `publishing.md`. Show the fix plan before editing, apply queued fixes by file or behavior area, and run targeted verification when practical.
-
-Do not start fixing until every actionable comment has a recorded decision. Do not present a global fix plan until all Critical/Major items have explicit recorded decisions and all Medium/Low items have either recorded decisions or explicitly accepted defaults such as `ok all`.
-
-## Step 6 - Preview, Publish, Resolve
-
-Read `publishing.md` and `resolve-threads.md`. Follow the publish lanes there: code-fix comments are committed and pushed before reply/resolve. Skip the extra confirmation only when the user explicitly asked to resolve, fix, or publish; review-only invocations require one publish confirmation before commit, push, reply, or resolve writes. Ask again only if a publish blocker appears.
+Once every item has a verdict (no open `high`/`ask`), read `publish.md` and follow the single publish flow: preview → authorization → commit+push if any Fix → reply+resolve.
 
 ## Common Mistakes
 
-1. `Fix` requires concrete `Code evidence` (file:line + quote, grep/diff/test artifact). Without it, pick `Defer` / `Reply only` / `Needs your decision` based on the case.
-2. Critical/Major: present one deduplicated item, ask for one decision, stop. Never batch.
-3. Render cards verbatim against the template in `presenting.md`. Do not add Anchor / Author / Issue / File rows or any other field beyond the template.
+1. Picking `Fix` with an empty or paraphrased Evidence field. No concrete artifact → not Fix.
+2. Inheriting impact from the bot's label instead of reading the code.
+3. Letting `ok all` clear `high` or `ask` items. It clears `normal` only.
+4. Adding fields to the card. Render the template as written.

@@ -18,9 +18,11 @@ Output JSON shape:
   "review_threads": [...]            # inline review threads
 }
 
+Mechanical drops happen at the source: resolved review threads and
 PR-level comments containing `<!-- resolve-pr-comments:reply -->`
-are prior skill replies; the agent must drop them before
-classification. Only unresolved threads are actionable by default.
+(prior skill replies) are excluded from the output, so the agent
+only sees actionable items. Outdated threads are kept — staleness
+needs a code check, not a mechanical drop.
 
 Run with --repo OWNER/REPO --pr 123 or --url <pr-url> for explicit PRs.
 """
@@ -37,6 +39,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 MAX_GRAPHQL_ATTEMPTS = 3
+SKILL_REPLY_MARKER = "<!-- resolve-pr-comments:reply -->"
 TRANSIENT_ERROR_PATTERNS = (
     "timeout",
     "timed out",
@@ -194,6 +197,13 @@ def normalize_author(author: dict[str, Any] | None) -> str | None:
     return author.get("login")
 
 
+def strip_internal_blocks(body: str | None) -> str:
+    """Drop HTML comments — bot internal-state / base64 blobs that bloat bodies and
+    are invisible to a human reader anyway. The skill-reply marker is matched on the
+    raw body before normalization, so stripping here does not affect re-run dedup."""
+    return re.sub(r"<!--.*?-->", "", body or "", flags=re.DOTALL).strip()
+
+
 def positive_reactions(groups: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
     positive = {"THUMBS_UP", "HOORAY", "ROCKET"}
     out: list[dict[str, Any]] = []
@@ -214,7 +224,7 @@ def normalize_issue_comment(node: dict[str, Any]) -> dict[str, Any]:
         "id": node.get("databaseId"),
         "node_id": node.get("id"),
         "type": "pr_level",
-        "body": node.get("body") or "",
+        "body": strip_internal_blocks(node.get("body")),
         "created_at": node.get("createdAt"),
         "updated_at": node.get("updatedAt"),
         "author": normalize_author(node.get("author")),
@@ -227,7 +237,7 @@ def normalize_review(node: dict[str, Any]) -> dict[str, Any]:
     return {
         "node_id": node.get("id"),
         "state": node.get("state"),
-        "body": node.get("body") or "",
+        "body": strip_internal_blocks(node.get("body")),
         "submitted_at": node.get("submittedAt"),
         "author": normalize_author(node.get("author")),
     }
@@ -241,7 +251,7 @@ def normalize_thread(node: dict[str, Any]) -> dict[str, Any]:
                 "id": comment.get("databaseId"),
                 "node_id": comment.get("id"),
                 "type": "inline",
-                "body": comment.get("body") or "",
+                "body": strip_internal_blocks(comment.get("body")),
                 "created_at": comment.get("createdAt"),
                 "updated_at": comment.get("updatedAt"),
                 "author": normalize_author(comment.get("author")),
@@ -358,7 +368,10 @@ def fetch_comments(owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         if payload.get("errors"):
             raise RuntimeError(json.dumps(payload["errors"], indent=2))
         comments_page = payload["data"]["repository"]["pullRequest"]["comments"]
-        comments.extend(normalize_issue_comment(n) for n in comments_page.get("nodes") or [])
+        for node in comments_page.get("nodes") or []:
+            if SKILL_REPLY_MARKER in (node.get("body") or ""):
+                continue
+            comments.append(normalize_issue_comment(node))
         cursor = comments_page["pageInfo"]["endCursor"] if comments_page["pageInfo"]["hasNextPage"] else None
         if not cursor:
             break
@@ -388,7 +401,11 @@ def fetch_threads(owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         if payload.get("errors"):
             raise RuntimeError(json.dumps(payload["errors"], indent=2))
         threads_page = payload["data"]["repository"]["pullRequest"]["reviewThreads"]
-        threads.extend(normalize_thread(n) for n in threads_page.get("nodes") or [])
+        threads.extend(
+            normalize_thread(n)
+            for n in threads_page.get("nodes") or []
+            if not n.get("isResolved")
+        )
         cursor = threads_page["pageInfo"]["endCursor"] if threads_page["pageInfo"]["hasNextPage"] else None
         if not cursor:
             break
