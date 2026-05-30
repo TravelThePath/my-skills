@@ -72,41 +72,53 @@ Impact is your read of the code, not the bot's label. A bot-labelled "Critical" 
 
 **Dedupe** only when comments hit the same file/topic, point at the same function/path, ask for the same action category, and share ≥2 meaningful keywords. List all reviewers in the header (`[coderabbit/cursor]`), synthesize their angles in `Wants`, reply to each thread.
 
-## Step 3 — Present
+## Step 3 — Present & decide
 
-One list, sorted by impact (`high` first, then `ask`, then `normal`). 5 items per page, global numbering. One card template — do not add fields.
+Sort all items by impact: `high` → `ask` → `normal`, numbered globally (so `why 7` and cross-references work across both tiers). One card template — do not add fields. Present in **two tiers**:
+
+- **`high` and `ask` — one at a time.** Show a single card, state the recommended verdict, and **stop for the user's decision.** Do not render the next card, or ask about several items at once, until the current one has a recorded verdict.
+- **`normal` — paginated.** 5 per page, recommended verdict on each; `ok` / `ok all` accepts the normal defaults. `ok all` never touches a `high`/`ask` item.
+
+Work the tiers in order: every `high` one-by-one, then every `ask` one-by-one, then the `normal` pages.
+
+A `high` / `ask` item, presented alone — stop after it:
 
 ```text
-── PR OWNER/REPO#123 — 3 threads ──────────
+── PR OWNER/REPO#123 — high 1 of 2 ──────────
 
 [high] #1 worker.go:42  [coderabbit]  → Fix
-Problem: the worker loop ignores ctx.Done(); a timed-out request leaves the goroutine running.
-Wants:   add a ctx.Done() branch to the select.
+Problem:  the worker loop never watches ctx.Done(), so when a request times out the goroutine just keeps running with nothing left to stop it.
+Wants:    add a ctx.Done() branch to the select.
 Evidence: worker.go:42 — `select { case w := <-work: …; case r := <-results: … }`, no ctx.Done() case.
-Reason:  confirmed in current code; the leak is real, so Fix.
+Reason:   confirmed in current code; the leak is real, so Fix.
 
-[ask]  #2 migration.sql  [coderabbit]  → Ask
-Problem: is this migration safe under concurrent writes?
-Wants:   confirmation or a plan.
-Evidence: none; bot's claim is about process (prod traffic + lock timing).
-Reason:  cannot verify within this repo; needs your call.
+Decision? fix · reply · defer · ask · why  — I'll stop here until you choose.
+```
+
+The `normal` tier, batched 5 per page:
+
+```text
+── PR OWNER/REPO#123 — normal, page 1 of 1 ──────────
 
 [norm] #3 model.go:33  [coderabbit]  → Reply
-Problem: reviewer wants an unused option removed.
-Wants:   delete the option here.
+Problem:  the reviewer wants an option dropped because it looks unused, but the handlers next to it deliberately keep the same one for interface symmetry.
+Wants:    delete the unused option here.
 Evidence: model.go:33 — declared, unused; peers keep it for interface symmetry (model_a.go:41).
-Reason:  removing it breaks the shared interface shape; explain in reply.
+Reason:   removing it would break the shared interface shape; explain in the reply.
 
-ok / ok all confirms normal-impact defaults only.
-high (#1) and ask (#2) stay open — address each explicitly.
+[norm] #4 …
 
+ok / ok all confirms these normal defaults; `high`/`ask` stay open.
 Reply with: ok · ok all · fix N · reply N · defer N · ask N · why N  (combinable: reply 3, defer 4)
 ```
 
-Writing style for `Problem`/`Wants`/`Evidence`/`Reason`: short, conclusion first, name the exact function/field/line. "This breaks because…" / "This is safe because…". No reviewer echo ("Consider adding…"), no hedging ("might", "could potentially"), no vague nouns ("logic", "handling", "issue").
+Writing style for `Problem`/`Wants`/`Evidence`/`Reason`: natural language, **as if explaining to a colleague sitting next to you — in your own words, not the reviewer's.** Lead with the conclusion, name the exact function/field/line, and write as much as the point needs — a clause or several sentences, no length quota. `Problem` is your own read of what actually breaks in the current code, not a paraphrase of the bot; `Wants` is the concrete change the reviewer is after, as a brief action. No reviewer echo ("Consider adding…"), no hedging ("might", "could potentially"), no vague nouns ("logic", "handling", "issue"). "This breaks because…" / "This is safe because…" when it helps.
+
+Render each field's value as one logical line — do **not** hand-wrap or indent-align continuation lines to the label column. Let the terminal soft-wrap; hand-wrapping at a narrow width wastes horizontal space and leaves the right side of the screen empty.
 
 | Input | Behavior |
 | --- | --- |
+| `fix` / `reply` / `defer` / `ask` / `why` (no number) | Decide the `high`/`ask` item shown right now; then advance to the next one. |
 | `ok` / `done` | Confirm this page's `normal` defaults. `high` and `ask` items stay open. |
 | `ok all` | Same, across all remaining pages. `high`/`ask` still stay open. |
 | `fix N` / `reply N` / `defer N` / `ask N` | Set the verdict for item N. Ranges/lists ok: `fix 1,3`, `reply 1-4`. |
@@ -123,4 +135,5 @@ Once every item has a verdict (no open `high`/`ask`), read `publish.md` and foll
 1. Picking `Fix` with an empty or paraphrased Evidence field. No concrete artifact → not Fix.
 2. Inheriting impact from the bot's label instead of reading the code.
 3. Letting `ok all` clear `high` or `ask` items. It clears `normal` only.
-4. Adding fields to the card. Render the template as written.
+4. Batching `high`/`ask` items — showing several cards together or asking for one combined decision. Show one, ask, stop; don't advance without a recorded verdict for it.
+5. Adding fields to the card. Render the template as written.
