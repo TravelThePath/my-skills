@@ -1,21 +1,9 @@
-# my-claude-codex
-
-Claude Code and Codex plugin for Go development, MySQL/Aurora guidance, implementation discipline, PR workflows, opsx prompts, and technical writing.
+# my-skills
 
 ## Install
 
-### Claude Code
-
 ```bash
-/plugin marketplace add alleninnz/my-claude-codex
-/plugin install my-claude-codex
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add alleninnz/my-claude-codex
-codex plugin marketplace upgrade my-claude-codex
+npx skills@latest add TravelThePath/my-skills
 ```
 
 ## Skills
