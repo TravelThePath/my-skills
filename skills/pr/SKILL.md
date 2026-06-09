@@ -41,12 +41,6 @@ Still ask before:
   - Do NOT list files changed, manual test steps, or version numbers.
 - Keep the body flat unless a `## Summary` heading aids reading for a multi-point change. No `## Test plan` section — change details belong in commits and automated tooling, not in a body that drifts on follow-up pushes.
 
-### Labels
-
-- On create, attach `agentic-dev PR` by default. Skip only when the user states the change is human-led and the agent only shaped the PR.
-- **The label name is fixed across all Caruso repos** — do NOT substitute a repo-local alternative (e.g. `claude-code-assisted`) just because `gh pr create --label "agentic-dev PR"` fails with `label not found`.
-- If the label is missing on a given repo, create it once with `gh label create "agentic-dev PR" --color "c4a5f7" --description "PRs created or substantially shaped by an AI coding agent"`, then attach. The label-creation step is durably authorized by the same PR-create request that triggered the failure; no second confirmation needed.
-
 ### Create
 
 - Draft by default; create as ready (non-draft) only when the user explicitly says so (e.g. passes `ready` or asks for a non-draft PR).
