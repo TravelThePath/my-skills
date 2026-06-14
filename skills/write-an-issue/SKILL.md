@@ -1,5 +1,5 @@
 ---
-name: write-a-issue
+name: write-an-issue
 description: Use when creating, writing, drafting, filing, or rewriting any Linear issue or ticket: feature, fix, update or one-off task.
 ---
 
