@@ -1,89 +1,60 @@
 ---
 name: pause-for-review
 description: >
-  Use before crossing a decision boundary: a direction choice (multiple
-  valid implementations), a contract commitment (public API, database
-  schema, proto/GraphQL field, migration, auth/tenant boundary, event
-  format), a costly-to-reverse action (delete data, force push, deploy
-  to shared env), after a discovery that invalidates the plan, or
-  after completing an independently reviewable slice. Not for routine
-  work inside the agreed slice — never pre-emptively, never based on
-  size.
+  Use before crossing a decision boundary: a direction choice (multiple valid implementations), a contract commitment (public API, database schema, proto/GraphQL field, migration, auth/tenant boundary, event format), a costly-to-reverse action (delete data, force push, deploy to shared env), after a discovery that invalidates the plan, or after completing an independently reviewable slice. Not for routine work inside the agreed slice — never pre-emptively, never based on size.
 ---
 
 # Pause for Review
 
-Pause only at the **decision boundaries** listed below — direction, contract, reversibility, discovery, or slice complete. Do not pause for size. Do not manufacture checkpoints on noise.
+## The principle
 
-## Continue Without Pausing
+A pause is a costly signal. It is worth something *only* because it is rare. Every unnecessary pause teaches the user to reply "yes" without looking — and once that habit forms, the real pause gets rubber-stamped too. So an unnecessary pause does not merely waste a turn; it spends down the protective value of every future pause.
 
-Stay inside the agreed slice. Examples:
+This gives one test, from which every boundary below is derived:
 
-- Happy path → error cases for the same behavior
-- Adding more tests or edge cases under the same contract
-- Fixing failures uncovered by the current verification command
-- Local refactor inside the slice (extract helper, rename a private symbol)
+> **Pause only where human judgment is load-bearing and being wrong is costly or hard to reverse.**
+
+The boundaries are proxies for that test, and they are calibrated to catch exactly the costly cases. So once you are confident you are inside an agreed slice, extra caution buys nothing — the boundaries already cover what matters — and it costs signal. When you hit a case the list doesn't name, decide by the test, not by the list, and not by size.
+
+Two ways to fail:
+
+- **Over-pause** — the common failure for an eager agent. Its damage compounds: it degrades every later pause. Guard against this hardest.
+- **Under-pause** — commit a contract, delete data, or push past a dead plan with no human input. Rarer, but the boundaries exist precisely to catch it.
+
+## Continue without pausing
+
+Stay inside the agreed slice. "Same slice" means the same behaviour under the same contract. If no slice was explicitly agreed, treat the user's last instruction as the slice. The user can interrupt at any time, so you never need to pause "to be safe."
+
+- Happy path → error cases for the same behaviour
+- More tests or edge cases under the same contract
+- Fixing failures the current verification command uncovers
+- Local refactor inside the slice (extract a helper, rename a private symbol)
 - Mechanical cleanup: formatting, imports, narrow renames
 - Running more verification
 
-The user can interrupt at any time. Do not pre-emptively pause "to be safe" — pre-emptive pauses train the user to rubber-stamp, which destroys the signal of a real pause.
+A new helper module, a new public function, or a code path that wasn't in scope is a *new* slice — see the boundaries below.
 
-"Same slice" means the same behavior under the same contract. Adding a new helper module, a new public function, or a new code path that wasn't in the agreed scope is a new slice — see the boundaries below. If no slice has been explicitly agreed, treat the user's last instruction as the slice.
+## Stop and surface
 
-## Stop and Surface for Review
+Pause when about to cross one of these. Cross only after the user acknowledges.
 
-Pause when about to cross any of these boundaries. Cross only after the user acknowledges.
+1. **Direction** — multiple valid paths exist: choosing between materially different strategies, naming an abstraction other code will depend on, resolving an ambiguous spec line, deciding what "done" means when the spec is silent.
+2. **Contract** — committing to something external: public API, GraphQL/REST schema, gRPC proto message, DB schema / migration / index, CLI flag / env var / config format, a permission / tenant / data-ownership boundary, an event format other services consume.
+3. **Reversibility** — costly to undo: data migration with non-trivial backfill, deleting code / data / branches / files (`git reset --hard`, `rm -rf`), deploying to a shared env, force push, history rewrite, dependency downgrade.
+4. **Discovery** — the plan turned out wrong (see below; this one is different).
+5. **Slice complete** — an independently reviewable unit is done: a vertical slice works end to end, all tests for the agreed scope pass, or a new architectural path runs end to end for the first time.
 
-### 1. Direction — multiple valid paths exist
+## Discovery is a re-plan, not a request
 
-- Choosing between materially different implementation strategies
-- Picking a name or abstraction other code will depend on
-- Resolving an ambiguous line in the spec
-- Deciding what "done" means when the spec is silent
+The other four boundaries ask *"may I cross this line?"* Discovery is different: the map is wrong, so the current plan is already void. Do not ask permission to continue down a path you now know is broken. Stop, state what you found and why it breaks the plan, and propose the new plan. The user is choosing a direction, not approving a step.
 
-### 2. Contract — committing to something external
+## How to pause well
 
-- Public API, GraphQL/REST schema, gRPC proto message
-- Database schema, migration, or index change
-- CLI flag, env var, config file format
-- Permission, authorization, tenant, or data-ownership boundary
-- Event or message format consumed by other services
+A pause is high-signal only if it carries your thinking forward. A pause that hands the decision back untouched — *"should I continue?"* — is itself noise: it makes the user reconstruct the context and do the work from scratch, which is exactly what trains rubber-stamping. So when you pause:
 
-### 3. Reversibility — costly to undo
+- State the decision in one line.
+- Give the real options — not yes/no, the actual forks.
+- Recommend one, with the reason. You did the analysis; share the conclusion.
+- Make the default action clear, so a one-word reply unblocks you.
 
-- Data migration with non-trivial backfill
-- Deleting code, data, branches, or files (especially `git reset --hard`, `rm -rf`)
-- Deploying to a shared environment
-- Force push, history rewrite, dependency downgrade
-
-### 4. Discovery — the plan turned out wrong
-
-- Verification reveals the spec contradicts code reality
-- Hit a constraint that invalidates the chosen approach
-- A "small fix" turned out to require crossing boundaries 1–3
-
-### 5. Slice complete — independently reviewable unit done
-
-- A vertical slice is end-to-end working
-- All tests for the agreed scope pass
-- A new architectural path runs end-to-end for the first time, even if not all cases are covered
-
-## Pause Output
-
-When pausing, produce this summary so the user can review without re-reading the diff:
-
-```text
-Pause: <which boundary, in 1 line — e.g. "Contract: about to commit gRPC proto field numbers">
-Done this round:
-  - <bullet per behavior change, not per file>
-Files: <list of changed paths>
-Verified: <command + result, or "not run because <reason>">
-Risks / unknowns: <none, or list>
-Decision needed: <specific question, or "review and ack to continue">
-```
-
-Notes on the template:
-
-- **`Pause:` first**: lets the user pick a review mindset (decision / approval / sign-off) before reading details.
-- **`Verified:` is mandatory**: if you didn't run anything, write "not run because <reason>". Silence reads as "passed".
-- **Risks vs Done**: if you're not sure something works, put it under `Risks / unknowns`, not under `Done this round`. The summary is a navigation aid for the user — don't use it as a self-confirmation that review happened.
+Batch related decisions into a single pause instead of ping-ponging across several. While waiting, stop work that depends on the pending decision; you may continue genuinely independent work, but default to stopping to keep the review surface small.
