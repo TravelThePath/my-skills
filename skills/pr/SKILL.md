@@ -1,29 +1,26 @@
 ---
 name: pr
 description: >
-  Use when the user asks to create, update, synchronize, merge, close, reopen,
-  mark draft, or mark ready a pull request, or when PR title, body, branch,
-  label, merge, or publish authorization conventions matter. Caruso/JasperLabs
-  scoped. Not for PR review comments; use resolve-pr-comments.
+  Use when the user asks to create, update, synchronize, merge, close, reopen, mark draft, or mark ready a pull request, or when PR title, body, branch, merge, or authorization conventions matter.
 ---
 
 # PR Conventions
 
-This skill defines PR workflow conventions for Caruso/JasperLabs repos: authorization boundaries, conventions per lifecycle stage, and non-obvious gotchas. Assume normal git/gh mechanics are known.
+PR workflow conventions for Caruso/JasperLabs repos: authorization boundaries, conventions per lifecycle stage, and non-obvious gotchas. Assume you know normal git/gh mechanics.
 
 ## Authorization
 
-A user request to create, update, synchronize, or merge a PR is explicit confirmation for the necessary scoped commit, push, PR edit, or PR merge action in that request.
+A user request to create, update, synchronize, or merge a PR is explicit confirmation for the scoped git/gh actions that request needs (commit, push, PR edit, or PR merge). *Scoped* means limited to the PR's own branch and the files relevant to the request.
 
 A user request to close, reopen, mark draft, or mark ready a PR is explicit confirmation for that requested PR state change.
 
-Still ask before:
+These always need a separate ask, even when they would accomplish the requested action faster:
 
 - Force push.
 - Pushing directly to `main` / `master`.
 - Pushing to protected branches outside the PR branch.
 - Staging unrelated files.
-- Enabling auto-merge (off by default per Merge convention; toggle only on explicit user request).
+- Enabling auto-merge (off by default; see Merge).
 
 ## Conventions
 
@@ -39,25 +36,25 @@ Still ask before:
 - Body: intent-focused, not detail-focused.
   - State the problem the PR solves, in 1-3 logical points.
   - Do NOT list files changed, manual test steps, or version numbers.
-- Keep the body flat unless a `## Summary` heading aids reading for a multi-point change. No `## Test plan` section — change details belong in commits and automated tooling, not in a body that drifts on follow-up pushes.
+- Keep the body flat unless a `## Summary` heading aids reading for a multi-point change. No `## Test plan` section. Change details belong in commits and automated tooling, not in a body that drifts on follow-up pushes.
 
 ### Create
 
 - Draft by default; create as ready (non-draft) only when the user explicitly says so (e.g. passes `ready` or asks for a non-draft PR).
 - If a PR already exists for the current branch: report it and treat further work as update/sync, not a new PR.
-- After creating a draft PR, post two separate review-trigger comments on it via `gh pr comment <pr> --body '<text>'` — one comment with body `@codex review`, another comment with body `BugBot run`. Two distinct comments, not a single combined one (each handle listens for its own standalone comment). Skip when the PR is created as ready.
+- After creating a draft PR, post two separate review-trigger comments on it via `gh pr comment <pr> --body '<text>'`: one with body `@codex review`, another with body `BugBot run`. Two distinct comments, not a single combined one (each handle listens for its own standalone comment). Skip when the PR is created as ready.
 
 ### Update / Sync
 
-- Regenerate and replace both PR title and body from the current branch state, even when an existing title is present. PR descriptions drift; treat each update as a fresh write. The regenerated title and body still follow the Title & Body conventions above — do not paste the diff.
+- Regenerate and replace both PR title and body from the current branch state, even when an existing title is present. PR descriptions drift; treat each update as a fresh write. The regenerated title and body still follow the Title & Body conventions above. Do not paste the diff.
 
 ### Merge
 
 - Squash merge only.
 - Subject: PR title as-is.
 - Body: one why sentence + themed bullets (intent, not file-by-file).
-- Preconditions: all CI checks pass, including non-required ones. Do not skip a non-required check without human-reviewer justification.
-- Auto-merge is off by default; only enable when the user explicitly asks (and confirm per Authorization).
+- Preconditions: all CI checks pass, including non-required ones. Do not skip a failing non-required check without explicit user sign-off.
+- Auto-merge: off by default; enable only on explicit user request (and confirm per Authorization).
 
 ### Close
 
@@ -68,4 +65,4 @@ Still ask before:
 - Worktree merge cleanup: if CWD is inside a worktree, use `git worktree remove`; do not checkout base inside the worktree.
 - `gh pr diff --stat` does not exist; use `gh pr view --json files`.
 - `git branch -d` can fail after squash merge; use `-D` only when the PR is confirmed merged.
-- CODEOWNERS auto-assigns reviewers — do NOT manually `--reviewer` on create unless the user names a specific reviewer. Manual assignment can break round-robin distribution within the owning team.
+- CODEOWNERS auto-assigns reviewers, so do NOT pass `--reviewer` on create unless the user names a specific reviewer. Manual assignment can break round-robin distribution within the owning team.
