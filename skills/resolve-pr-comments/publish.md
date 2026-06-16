@@ -34,7 +34,7 @@ Stop before any GitHub write (commit, push, reply, resolve) and ask, naming the 
 
 ## Replies
 
-Every thread gets a reply before it is resolved. Never resolve silently — **except outdated threads** (`is_outdated`), which are resolved without a reply because the code they referenced no longer exists. This is the only exception.
+Every thread gets a reply before it is resolved. The one exception is **outdated threads** (`is_outdated`), resolved without a reply.
 
 | Verdict | Reply |
 | --- | --- |
