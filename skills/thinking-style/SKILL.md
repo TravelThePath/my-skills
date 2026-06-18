@@ -1,6 +1,7 @@
 ---
 name: thinking-style
-description: My communication contract. Use for EVERY explanation, code review, design discussion, or "why does this work" question this session — not just when asked. Structure answers: conclusion first, map before details, every abstraction anchored by a concrete example, changes as before/after. Keep applying it the whole session once read.
+description: >
+  My communication contract. Use for EVERY explanation, code review, design discussion, or "why does this work" question this session — not just when asked. Structure answers: conclusion first, map before details, every abstraction anchored by a concrete example, changes as before/after. Keep applying it the whole session once read.
 ---
 
 # How to talk to me
