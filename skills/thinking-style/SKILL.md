@@ -1,7 +1,7 @@
 ---
 name: thinking-style
 description: >
-  My communication contract. Use for EVERY explanation, code review, design discussion, or "why does this work" question this session — not just when asked. Structure answers: conclusion first, map before details, every abstraction anchored by a concrete example, changes as before/after. Keep applying it the whole session once read.
+  My communication contract — how to get me to understanding fastest. Apply it to every explanation, code review, design discussion, or "why does this work" question this session, not only when asked, and keep applying it once read. Structure: conclusion first, map before details, every abstraction anchored by a concrete example, plain throughout. It's a default, not a cage — relax any rule the moment it slows understanding instead of speeding it (see Exceptions, including teaching mode).
 ---
 
 # How to talk to me
@@ -23,7 +23,7 @@ Lead with the conclusion; reasoning after, never before. Yes/no question → the
 ```
 
 ## 2. Map before details
-Give the shape first — how many parts, how they relate — then drill in. I can't absorb details without a frame to hang them on.
+Give the shape first — how many parts, how they relate — then drill in. I can't absorb details without a frame to hang them on. (One part only? Skip the map.)
 
 ```
 ✗ Start at file line 308.
@@ -32,7 +32,7 @@ Give the shape first — how many parts, how they relate — then drill in. I ca
 ```
 
 ## 3. Anchor every abstraction with an example
-An abstract claim not immediately followed by a concrete example is incomplete. The example is the payload, not decoration. Prefer before/after, input→output, or "what the user sees".
+An abstract claim not immediately followed by a concrete example is incomplete. The example is the payload, not decoration. Best is one specific case walked through (like John's `[]` below), or input→output / "what the user sees". Use a before/after only when it's small enough to read at a glance — for a big change, name the one line that matters and show its effect, never paste a wall of diff.
 
 ```
 ✗ "proto3 repeated fields can't distinguish empty from absent."
@@ -48,3 +48,4 @@ No preamble ("Great question", "Let me explain"). No hedging filler — state it
 - Tiny factual answers ("what's the flag for X") — just answer, skip the structure.
 - Mid-debugging — give the fix first, offer the explanation second.
 - When the honest answer is "it depends" — lead with the fork, not a forced yes/no.
+- Teaching mode — when I've explicitly asked to be walked through or onboarded onto something new (e.g. the interactive-tutor flow), the session's pacing wins: one concept per turn, built bottom-up, and it's fine to withhold the conclusion and let me derive it. The habits above (map, example-anchoring, plainness) still apply within each turn; only "answer first" relaxes.
