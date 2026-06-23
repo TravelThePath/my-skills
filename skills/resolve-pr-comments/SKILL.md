@@ -1,7 +1,7 @@
 ---
 name: resolve-pr-comments
 description: >
-  Use when a PR has reviewer comments or threads to address, resolve, respond to, fix, or work through — from AI bots (CodeRabbit, Copilot, Cursor, etc.) or human reviewers. Covers both review-only passes and publish flows that commit fixes, post replies, and close GitHub threads.
+  Use when a PR has reviewer comments or threads to address, resolve, respond to, fix, or work through — from AI bots (CodeRabbit, Copilot, Cursor, etc.) or human reviewers. Covers both review-only passes and publish flows that commit fixes, post replies, and close GitHub threads. Do not use for general code review without open PR review threads.
 ---
 
 # Resolve PR Comments
@@ -115,3 +115,7 @@ For PR-level comments, add a `Signals:` line before `Problem` (positive reaction
 ## Step 4 — Publish
 
 Once every item has a verdict (no open `high`/`ask`), read `publish.md` and follow the single publish flow: preview → authorization → commit+push if any Fix → reply+resolve.
+
+## Step 5 — Learn (opt-in)
+
+Triggered only when the user types `learn` after publish. Read `learn.md` and follow it.
