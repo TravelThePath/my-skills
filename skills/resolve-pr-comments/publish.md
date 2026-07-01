@@ -1,4 +1,4 @@
-# Publish — commit, reply, resolve
+# Publish — commit, push, reply, resolve
 
 Reached when every item has a verdict (no open `high`/`ask`). One flow, with a commit step only when at least one item is `Fix`.
 
@@ -10,21 +10,20 @@ Reached when every item has a verdict (no open `high`/`ask`). One flow, with a c
    - the reply that will be posted to each thread
    - threads to resolve, outdated threads to resolve without a reply (count + one-line each), and any Defer follow-up drafts
 
-2. **Authorization.**
-   - Explicit `resolve` / `fix` / `publish` request → authorized, continue.
-   - Review-only request → ask once: `Commit and push fixes, then post replies and resolve processed threads?` Continue only if confirmed.
-
-3. **Commit + push** (only if any `Fix`). Fixed replies must reference a commit visible on the PR, so this happens before reply/resolve.
+2. **Apply fixes + commit locally** (only if any `Fix`).
    - Stage only the intended files (never `git add -A`). Group fixes by file/behavior, apply, then run the applicable verification (infer commands from `CLAUDE.md`/`AGENTS.md`, `Makefile`, package scripts, `go.mod`, or CI). Print commands before running.
    - Do not run a fresh CodeRabbit/uncommitted review — this skill is already responding to existing review.
-   - Commit with a descriptive message and push.
+   - Commit with a descriptive message. **Do not push yet.**
 
-4. **Reply + resolve.** Re-fetch PR head and unresolved thread IDs (state may have moved since Step 1). For each `Defer`, create the follow-up issue/note first so its reply cites a real reference. Post each reply, then resolve each processed thread. Resolve any outdated threads in the same pass — **without a reply**. Print only `All replies posted. Now resolving threads.` then `All N threads resolved.`
+3. **Confirmation gate — always ask, never skip.** Once every fix is applied and committed, stop and ask the user explicitly — e.g. `All bot comments handled. Push the commit and resolve N threads? Reply "yes" to continue.` This gate is mandatory **even when the original request was `fix` / `resolve` / `publish`**: that request authorized applying the fixes, not the outward push and resolve. Proceed only on an explicit affirmative (`yes`). On anything else, hold — leave the commit local, push nothing, resolve nothing — and wait.
+
+4. **Push + reply + resolve** (only after the user's explicit `yes`). Push first — `Fixed in <commit>` replies must reference a commit visible on the PR. Then re-fetch PR head and unresolved thread IDs (state may have moved since Step 1). For each `Defer`, create the follow-up issue/note first so its reply cites a real reference. Post each reply, then resolve each processed thread. Resolve any outdated threads in the same pass — **without a reply**. Leave nitpick threads untouched — no reply, no resolve. Print only `All replies posted. Now resolving threads.` then `All N threads resolved.`
 
 ## Stop conditions
 
-Stop before any GitHub write (commit, push, reply, resolve) and ask, naming the reason, if any hold:
+Stop before any commit, push, or thread write and ask, naming the reason, if any hold:
 
+- The user has not replied `yes` to the Step 3 confirmation gate — always required before pushing, replying, or resolving, even for an explicit `fix` / `resolve` / `publish` request.
 - The local diff includes work outside the recorded verdicts.
 - An item is missing a verdict, or an `Ask` was never converted.
 - A `Fix` commit is not yet visible on PR head.
@@ -34,7 +33,7 @@ Stop before any GitHub write (commit, push, reply, resolve) and ask, naming the 
 
 ## Replies
 
-Every thread gets a reply before it is resolved. The one exception is **outdated threads** (`is_outdated`), resolved without a reply.
+Every thread gets a reply before it is resolved. Two exceptions: **outdated threads** (`is_outdated`) are resolved without a reply; **nitpick-labelled threads** are neither replied to nor resolved — they were shown for awareness only, so leave them untouched.
 
 | Verdict | Reply |
 | --- | --- |

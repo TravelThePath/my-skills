@@ -1,6 +1,6 @@
 # Learn — turn Fix items into durable rules
 
-Goal: turn `Fix` items where the **agent wrote the bad code** into rules that prevent the same mistake from recurring. Rules land in the right config file — global or per-repo — so Step 2's convention-reading and this step's convention-writing stay symmetric.
+Goal: turn `Fix` items where the **agent wrote the bad code** into rules that stop the same mistake next time. Rules go in the right config file — global or per-repo — the same files Step 2 reads conventions from.
 
 ## Flow
 
