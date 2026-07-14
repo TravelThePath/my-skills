@@ -38,15 +38,26 @@ These always need a separate ask, even when they would accomplish the requested 
   - Do NOT list files changed, manual test steps, or version numbers.
 - Keep the body flat unless a `## Summary` heading aids reading for a multi-point change. No `## Test plan` section. Change details belong in commits and automated tooling, not in a body that drifts on follow-up pushes.
 
+### Quality gate
+
+The code a commit or a PR-updating push carries must pass the repo's formatter, linter, and static analysis. A PR must never introduce a new failure.
+
+- Discover the repo's own commands — Makefile targets (`make format`, `make lint`), `.golangci.yml`, `pre-commit` config, `package.json` scripts, the CI workflow, `CLAUDE.md` — and run those. Do not guess or hand-roll a formatter.
+- Run format first, then lint / vet / static analysis, then commit. Formatting rewrites files, so re-stage only the target files afterwards — never `git add -A`.
+- You own failures in the files your change touches; fix them before committing. You need not fix pre-existing failures in untouched files, but never add new ones. If a required fix falls outside the change's scope, surface it rather than commit a dirty diff.
+- If the repo defines no such tooling, say so and fall back to the language default (e.g. `gofmt`, `go vet`).
+
 ### Create
 
 - Draft by default; create as ready (non-draft) only when the user explicitly says so (e.g. passes `ready` or asks for a non-draft PR).
+- Commit only after the Quality gate passes.
 - If a PR already exists for the current branch: report it and treat further work as update/sync, not a new PR.
 - After creating a draft PR, post two separate review-trigger comments on it via `gh pr comment <pr> --body '<text>'`: one with body `@codex review`, another with body `BugBot run`. Two distinct comments, not a single combined one (each handle listens for its own standalone comment). Skip when the PR is created as ready.
 
 ### Update / Sync
 
 - Regenerate and replace both PR title and body from the current branch state, even when an existing title is present. PR descriptions drift; treat each update as a fresh write. The regenerated title and body still follow the Title & Body conventions above. Do not paste the diff.
+- Push updates only after the Quality gate passes.
 
 ### Merge
 
